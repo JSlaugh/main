@@ -6,12 +6,16 @@ export default {
     let params = new URLSearchParams(uri)
     this.token = params.get('fstoken')
     console.log(this.token)
+    this.accessToken = this.parseJWT(this.token)
+    console.log(this.accessToken)
   },
 
   data() {
     let token = ''
+    let accessToken = ''
     return {
-      token
+      token,
+      accessToken
     }
   },
   methods: {
@@ -29,6 +33,18 @@ export default {
         .catch((err) => {
           console.log(err)
         })
+    },
+    async parseJWT(token) {
+      const base64Url = token.split('.')[1]
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      )
+      return JSON.parse(jsonPayload)
     }
   }
 }
