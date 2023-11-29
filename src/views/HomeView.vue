@@ -1,17 +1,7 @@
 <script>
 import axios from 'axios'
-import { Tree } from '../data/fsdatastructures'
-import { Person } from '../data/fsdatastructures'
 
 export default {
-  created() {
-    let uri = window.location.search.substring(1)
-    let params = new URLSearchParams(uri)
-    this.token = params.get('fstoken')
-    console.log(this.token)
-    this.familySearchDataFinal = this.getFamilySearchData()
-  },
-
   data() {
     let token = ''
     let accessToken = ''
@@ -25,7 +15,7 @@ export default {
   methods: {
     async doLogin() {
       let authUrl = 'https://auth.byufamilytech.org'
-      let redirectUri = 'http://localhost:5173'
+      let redirectUri = 'http://localhost:5173/hangman'
 
       window.open(`${authUrl}/?redirect=${redirectUri}/&site=ag`)
       axios
@@ -37,60 +27,6 @@ export default {
         .catch((err) => {
           console.log(err)
         })
-    },
-    async parseJWT(token) {
-      const base64Url = token.split('.')[1]
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      )
-      return JSON.parse(jsonPayload)
-    },
-    async getFamilySearchData() {
-      let fsData = await this.parseJWT(this.token)
-        .then((result) => {
-          return result
-        })
-        .catch((e) => {
-          console.log(e)
-        })
-      console.log(fsData)
-      const url = `https://api.familysearch.org/platform/tree/ancestry?person=${fsData.fs_user.pid}&generations=5&personDetails&marriageDetails=`
-      var familySearchData
-      await axios
-        .get(url, {
-          headers: { Authorization: `Bearer ${fsData.fs_access_token}` }
-        })
-        .then((res) => {
-          familySearchData = {
-            data: res.data,
-            accessToken: fsData.fs_access_token,
-            userPID: fsData.fs_user.pid
-          }
-          return familySearchData
-        })
-        .catch((err) => {
-          console.log(err)
-        })
-      familySearchData = this.convertFamilySearchData(familySearchData)
-      return familySearchData
-    },
-    convertFamilySearchData(rawFSData) {
-      let newFSData = new Tree()
-
-      if (rawFSData && rawFSData.data.persons) {
-        for (var i in rawFSData.data.persons) {
-          let person = new Person(rawFSData.data.persons[i])
-          newFSData.addPerson(person)
-        }
-      }
-      newFSData.insertRelationships(rawFSData.data.relationships)
-      console.log(newFSData)
-      return newFSData
     }
   }
 }
@@ -98,7 +34,6 @@ export default {
 
 <template>
   <main>
-    <nav class="container"><h3>FamilyTech Games</h3></nav>
     <div class="loginContainer">
       <button class="loginButton" @click="doLogin" style="padding: 20px">
         Login with Family Search
