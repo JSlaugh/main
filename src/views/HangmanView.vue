@@ -102,7 +102,7 @@ export default {
       // Ressetting game variables and UI elements
       this.correctLetters = []
       this.wrongGuessCount = 0
-      this.hangmanImage.src = '/src/assets/hangman-0.svg'
+      this.hangmanImage.src = '/src/assets/0.svg'
       this.guessesText.innerText = `${this.wrongGuessCount} / ${this.maxGuesses}`
       this.wordDisplay.innerHTML = this.currentWord
         .split('')
@@ -141,7 +141,7 @@ export default {
       } else {
         // If clicked letter doesn't exist then update the wrongGuessCount and hangman image
         this.wrongGuessCount++
-        this.hangmanImage.src = `/src/assets/hangman-${this.wrongGuessCount}.svg`
+        this.hangmanImage.src = `/src/assets/${this.wrongGuessCount}.svg`
       }
       button.disabled = true // Disabling the clicked button so user can't click again
       this.guessesText.innerText = `${this.wrongGuessCount} / ${this.maxGuesses}`
