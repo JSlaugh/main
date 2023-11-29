@@ -1,21 +1,25 @@
 <script>
 import axios from 'axios'
+import { Tree } from '../data/fsdatastructures'
+import { Person } from '../data/fsdatastructures'
+
 export default {
   created() {
     let uri = window.location.search.substring(1)
     let params = new URLSearchParams(uri)
     this.token = params.get('fstoken')
     console.log(this.token)
-    this.accessToken = this.parseJWT(this.token)
-    console.log(this.accessToken)
+    this.familySearchDataFinal = this.getFamilySearchData()
   },
 
   data() {
     let token = ''
     let accessToken = ''
+    let familySearchDataFinal
     return {
       token,
-      accessToken
+      accessToken,
+      familySearchDataFinal
     }
   },
   methods: {
@@ -45,6 +49,48 @@ export default {
           .join('')
       )
       return JSON.parse(jsonPayload)
+    },
+    async getFamilySearchData() {
+      let fsData = await this.parseJWT(this.token)
+        .then((result) => {
+          return result
+        })
+        .catch((e) => {
+          console.log(e)
+        })
+      console.log(fsData)
+      const url = `https://api.familysearch.org/platform/tree/ancestry?person=${fsData.fs_user.pid}&generations=5&personDetails&marriageDetails=`
+      var familySearchData
+      await axios
+        .get(url, {
+          headers: { Authorization: `Bearer ${fsData.fs_access_token}` }
+        })
+        .then((res) => {
+          familySearchData = {
+            data: res.data,
+            accessToken: fsData.fs_access_token,
+            userPID: fsData.fs_user.pid
+          }
+          return familySearchData
+        })
+        .catch((err) => {
+          console.log(err)
+        })
+      familySearchData = this.convertFamilySearchData(familySearchData)
+      return familySearchData
+    },
+    convertFamilySearchData(rawFSData) {
+      let newFSData = new Tree()
+
+      if (rawFSData && rawFSData.data.persons) {
+        for (var i in rawFSData.data.persons) {
+          let person = new Person(rawFSData.data.persons[i])
+          newFSData.addPerson(person)
+        }
+      }
+      newFSData.insertRelationships(rawFSData.data.relationships)
+      console.log(newFSData)
+      return newFSData
     }
   }
 }

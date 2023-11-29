@@ -1,4 +1,4 @@
-export default class Tree {
+export class Tree {
   constructor() {
     //map of ascendancy number to index
     this.personMap = new Map()
