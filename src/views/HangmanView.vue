@@ -315,7 +315,7 @@ export default {
   padding: 12px 23px;
 }
 
-media (max-width: 782px) {
+@media (max-width: 782px) {
   .container2 {
     flex-direction: column;
     padding: 30px 15px;
