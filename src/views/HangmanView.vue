@@ -9,7 +9,31 @@ export default {
     let params = new URLSearchParams(uri)
     this.token = params.get('fstoken')
     console.log(this.token)
+
     this.familySearchDataFinal = this.getFamilySearchData()
+
+    //Grab random ancestor name
+    this.familySearchDataFinal.then((result) => {
+
+      let lengthOfFamilyNames = Object.keys(result).length;
+      let randomNumber = Math.floor(Math.random() * (lengthOfFamilyNames + 1)); 
+      
+      // Iterating through the values in the Map using the values() method
+      let peopleArray = Array.from(result.personMap.values());
+      
+      // Setting a session variable for the ancestor name and hint
+      let randomAncestorName = peopleArray[randomNumber].name.compressedName;
+      let birthdayHint = peopleArray[randomNumber].birthDate.original;
+
+      console.log("HINT: ", peopleArray[randomNumber].birthDate.original)
+
+      sessionStorage.setItem('randomAncestorToGuess', randomAncestorName);
+      sessionStorage.setItem('ancestorBirthdayToGuess', birthdayHint);
+
+    }).catch((error) => {
+      console.error(error); // Handling any errors that might occur during the Promise execution
+    });
+
   },
   mounted() {
     this.wordDisplay = this.$refs.wordDisplay
@@ -91,6 +115,7 @@ export default {
         for (var i in rawFSData.data.persons) {
           let person = new Person(rawFSData.data.persons[i])
           newFSData.addPerson(person)
+          //console.log(person.name.compressedName)
         }
       }
       newFSData.insertRelationships(rawFSData.data.relationships)
@@ -101,6 +126,10 @@ export default {
     resetGame() {
       // Ressetting game variables and UI elements
       this.correctLetters = []
+      // Clearing ancestor name from sessionStorage
+      sessionStorage.removeItem('randomAncestorToGuess');
+      sessionStorage.removeItem('ancestorBirthdayToGuess');
+
       this.wrongGuessCount = 0
       this.hangmanImage.src = '/src/assets/0.svg'
       this.guessesText.innerText = `${this.wrongGuessCount} / ${this.maxGuesses}`
@@ -114,13 +143,25 @@ export default {
 
     getRandomWord() {
       // Selecting a random word and hint from the wordList
-      this.currentWord = 'ancestor' // Making currentWord as random word
-      document.querySelector('.hint-text b').innerText = 'Info about ancestor here'
+      let ancestorName = sessionStorage.getItem('randomAncestorToGuess');
+      let ancestorHint = sessionStorage.getItem('ancestorBirthdayToGuess');
+
+      let outputString = ""
+
+      //If no birthdate, update variable
+      if ( ancestorHint === 'undefined' ) {
+         outputString = "No birthdate found/ancestor is still living" 
+        } else {
+          outputString = ancestorHint
+        }
+
+      this.currentWord = ancestorName.toLowerCase() // Making random ancestor name, the guess
+      document.querySelector('.hint-text b').innerText = outputString
       this.resetGame()
     },
     gameOver(isVictory) {
       // After game complete.. showing modal with relevant details
-      const modalText = isVictory ? `You found the word:` : 'The correct word was:'
+      const modalText = isVictory ? `You found the ancestor:` : 'The ancestor was/is:'
       this.gameModal.querySelector('img').src = `/src/assets/${isVictory ? 'victory' : 'lost'}.gif`
       this.gameModal.querySelector('h4').innerText = isVictory ? 'Congrats!' : 'Game Over!'
       this.gameModal.querySelector('p').innerHTML = `${modalText} <b>${this.currentWord}</b>`
