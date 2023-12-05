@@ -8,31 +8,9 @@ export default {
     let uri = window.location.search.substring(1)
     let params = new URLSearchParams(uri)
     this.token = params.get('fstoken')
-    console.log(this.token)
+    //console.log(this.token)
 
     this.familySearchDataFinal = this.getFamilySearchData()
-
-    //Grab random ancestor name
-    this.familySearchDataFinal.then((result) => {
-
-      let lengthOfFamilyNames = Object.keys(result).length;
-      let randomNumber = Math.floor(Math.random() * (lengthOfFamilyNames + 1)); 
-      
-      // Iterating through the values in the Map using the values() method
-      let peopleArray = Array.from(result.personMap.values());
-      
-      // Setting a session variable for the ancestor name and hint
-      let randomAncestorName = peopleArray[randomNumber].name.compressedName;
-      let birthdayHint = peopleArray[randomNumber].birthDate.original;
-
-      console.log("HINT: ", peopleArray[randomNumber].birthDate.original)
-
-      sessionStorage.setItem('randomAncestorToGuess', randomAncestorName);
-      sessionStorage.setItem('ancestorBirthdayToGuess', birthdayHint);
-
-    }).catch((error) => {
-      console.error(error); // Handling any errors that might occur during the Promise execution
-    });
 
   },
   mounted() {
@@ -86,7 +64,14 @@ export default {
     currentWord: '',
     correctLetters: [],
     wrongGuessCount: '',
-    maxGuesses: 6
+    maxGuesses: 6,
+    peopleArray: [],
+    lengthOfFamilyNames: 0,
+    randomNumber: 0,
+    randomAncestorName: '',
+    birthdayHint: '',
+
+
   }),
   methods: {
     async parseJWT(token) {
@@ -109,7 +94,7 @@ export default {
         .catch((e) => {
           console.log(e)
         })
-      console.log(fsData)
+      //console.log(fsData)
       const url = `https://api.familysearch.org/platform/tree/ancestry?person=${fsData.fs_user.pid}&generations=5&personDetails&marriageDetails=`
       var familySearchData
       await axios
@@ -141,7 +126,7 @@ export default {
         }
       }
       newFSData.insertRelationships(rawFSData.data.relationships)
-      console.log(newFSData)
+      //console.log(newFSData)
       return newFSData
     },
 
@@ -165,21 +150,31 @@ export default {
 
     getRandomWord() {
       // Selecting a random word and hint from the wordList
-      let ancestorName = sessionStorage.getItem('randomAncestorToGuess');
-      let ancestorHint = sessionStorage.getItem('ancestorBirthdayToGuess');
+      this.familySearchDataFinal.then((result) => {
+      this.lengthOfFamilyNames = Object.keys(result).length;
+      this.randomNumber = Math.floor(Math.random() * (this.lengthOfFamilyNames + 1)); 
+      
+      // Iterating through the values in the Map using the values() method
+      this.peopleArray = Array.from(result.personMap.values());
+      
+      // Setting a session variable for the ancestor name and hint
+      this.randomAncestorName = this.peopleArray[this.randomNumber].name.compressedName;
+      this.birthdayHint = this.peopleArray[this.randomNumber].birthDate.original;
 
       let outputString = ""
 
       //If no birthdate, update variable
-      if ( ancestorHint === 'undefined' ) {
+      if ( this.birthdayHint == undefined ) {
          outputString = "No birthdate found/ancestor is still living" 
         } else {
-          outputString = ancestorHint
+          outputString = this.birthdayHint
         }
 
-      this.currentWord = ancestorName.toLowerCase() // Making random ancestor name, the guess
+      this.currentWord = this.randomAncestorName.toLowerCase() // Making random ancestor name, the guess
       document.querySelector('.hint-text b').innerText = outputString
       this.resetGame()
+      
+      });
     },
     gameOver(isVictory) {
       // After game complete.. showing modal with relevant details
