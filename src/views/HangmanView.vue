@@ -39,14 +39,36 @@ export default {
     this.wordDisplay = this.$refs.wordDisplay
     this.guessesText = this.$refs.guessesText
     this.keyboardDiv = this.$refs.keyboardDiv
+    this.line1 = this.$refs.line1
+    this.line2 = this.$refs.line2
+    this.line3 = this.$refs.line3
     this.hangmanImage = this.$refs.hangmanImage
     this.gameModal = this.$refs.gameModal
     this.playAgainBtn = this.$refs.playAgainBtn
-    for (let i = 97; i <= 122; i++) {
+    let asKeyboard = [113, 119, 101, 114, 116, 121, 117, 105, 111, 112, 97, 115, 100, 102, 103, 104, 106, 107, 108, 122, 120, 99, 118, 98, 110, 109];
+    for (let i = 0; i <asKeyboard.length; i++) {
       const button = document.createElement('button')
-      button.innerText = String.fromCharCode(i)
-      this.keyboardDiv.appendChild(button)
-      button.addEventListener('click', (e) => this.initGame(e.target, String.fromCharCode(i)))
+      button.innerText = String.fromCharCode(asKeyboard[i])
+      button.setAttribute("id", String.fromCharCode(asKeyboard[i]));
+      if (i < 10)
+      {
+        this.line1.appendChild(button)
+      }
+      else if (i < 19)
+      {
+        this.line2.appendChild(button)
+      }
+      else
+      {
+        this.line3.appendChild(button)
+      }
+    
+      button.addEventListener('click', (e) => this.initGame(e.target, String.fromCharCode(asKeyboard[i])));
+      document.addEventListener('keypress', function (e) {
+      if (e.key == String.fromCharCode(asKeyboard[i])) {
+        document.getElementById(String.fromCharCode(asKeyboard[i])).click();
+      }
+});
     }
     this.getRandomWord()
     this.playAgainBtn.addEventListener('click', this.getRandomWord)
@@ -212,7 +234,11 @@ export default {
       <ul class="word-display" ref="wordDisplay"></ul>
       <h4 class="hint-text">Fact: <b></b></h4>
       <h4 class="guesses-text">Incorrect guesses: <b ref="guessesText"></b></h4>
-      <div class="keyboard" ref="keyboardDiv"></div>
+      <div class="keyboard" ref="keyboardDiv">
+        <div class="line1" ref="line1"></div>
+        <div class="line2" ref="line2"></div>
+        <div class="line3" ref="line3"></div>
+      </div>
     </div>
   </div>
 </template>
@@ -222,14 +248,14 @@ export default {
 
 .container2 {
   display: flex;
-  width: 850px;
-  gap: 70px;
+  gap: 10rem;
   padding: 60px 40px;
   background: #fff;
   border-radius: 10px;
   align-items: flex-end;
-  justify-content: space-between;
+  justify-content: center;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  color: #272727
 }
 .hangman-box img {
   user-select: none;
@@ -277,8 +303,15 @@ export default {
 .game-box .keyboard {
   display: flex;
   gap: 5px;
+  flex-direction: column;
   flex-wrap: wrap;
   margin-top: 40px;
+  justify-content: center;
+  align-items: center;
+}
+.game-box .keyboard .line1, .line2, .line3 {
+  display: flex;
+  gap: 5px;
   justify-content: center;
 }
 :where(.game-modal, .keyboard) button {
@@ -291,6 +324,7 @@ export default {
   border-radius: 4px;
   text-transform: uppercase;
   background: #5e63ba;
+  min-width: 30px;
 }
 .keyboard button {
   padding: 7px;
@@ -331,6 +365,7 @@ export default {
   border-radius: 10px;
   background: #fff;
   text-align: center;
+  color: #272727;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 .game-modal img {
