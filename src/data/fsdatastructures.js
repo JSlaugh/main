@@ -215,7 +215,9 @@ class Name {
     //this.middle = given ? given.replace(this.first + " ", '') : undefined;
     this.last = surname
     this.compressedName = (
-      this.first.replace(/\s/g, '') + this.last.replace(/\s/g, '')
+      this.first.replace(/\s/g, '') +
+      ' ' +
+      this.last.replace(/\s/g, '')
     ).toUpperCase()
     //this.compressedName = this.full.replace(/[\s.,-]/g, '').toUpperCase();
     this.isFull = !!this.full && !!given && !!surname
