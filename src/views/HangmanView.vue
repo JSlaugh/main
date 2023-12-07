@@ -11,7 +11,6 @@ export default {
     //console.log(this.token)
 
     this.familySearchDataFinal = this.getFamilySearchData()
-
   },
   mounted() {
     this.wordDisplay = this.$refs.wordDisplay
@@ -23,33 +22,44 @@ export default {
     this.hangmanImage = this.$refs.hangmanImage
     this.gameModal = this.$refs.gameModal
     this.playAgainBtn = this.$refs.playAgainBtn
-    let asKeyboard = [113, 119, 101, 114, 116, 121, 117, 105, 111, 112, 97, 115, 100, 102, 103, 104, 106, 107, 108, 122, 120, 99, 118, 98, 110, 109];
-    for (let i = 0; i <asKeyboard.length; i++) {
+    let asKeyboard = [
+      113, 119, 101, 114, 116, 121, 117, 105, 111, 112, 97, 115, 100, 102, 103, 104, 106, 107, 108,
+      122, 120, 99, 118, 98, 110, 109
+    ]
+    for (let i = 0; i < asKeyboard.length; i++) {
       const button = document.createElement('button')
       button.innerText = String.fromCharCode(asKeyboard[i])
-      button.setAttribute("id", String.fromCharCode(asKeyboard[i]));
-      if (i < 10)
-      {
+      button.setAttribute('id', String.fromCharCode(asKeyboard[i]))
+      if (i < 10) {
         this.line1.appendChild(button)
-      }
-      else if (i < 19)
-      {
+      } else if (i < 19) {
         this.line2.appendChild(button)
-      }
-      else
-      {
+      } else {
         this.line3.appendChild(button)
       }
-    
-      button.addEventListener('click', (e) => this.initGame(e.target, String.fromCharCode(asKeyboard[i])));
+
+      button.addEventListener('click', (e) =>
+        this.initGame(e.target, String.fromCharCode(asKeyboard[i]))
+      )
       document.addEventListener('keypress', function (e) {
-      if (e.key == String.fromCharCode(asKeyboard[i])) {
-        document.getElementById(String.fromCharCode(asKeyboard[i])).click();
-      }
-});
+        if (e.key == String.fromCharCode(asKeyboard[i])) {
+          document.getElementById(String.fromCharCode(asKeyboard[i])).click()
+        }
+      })
     }
     this.getRandomWord()
     this.playAgainBtn.addEventListener('click', this.getRandomWord)
+    if (this.currentWord.includes(' ')) {
+      // Showing all correct letters on the word display
+      ;[...this.currentWord].forEach((letter, index) => {
+        if (letter === ' ') {
+          this.correctLetters.push(letter)
+          this.wordDisplay.querySelectorAll('li')[index].innerText = letter
+          this.wordDisplay.querySelectorAll('li')[index].classList.add('guessed')
+        }
+      })
+    }
+    console.log(this.currentWord)
   },
   data: () => ({
     token: '',
@@ -69,9 +79,7 @@ export default {
     lengthOfFamilyNames: 0,
     randomNumber: 0,
     randomAncestorName: '',
-    birthdayHint: '',
-
-
+    birthdayHint: ''
   }),
   methods: {
     async parseJWT(token) {
@@ -134,15 +142,21 @@ export default {
       // Ressetting game variables and UI elements
       this.correctLetters = []
       // Clearing ancestor name from sessionStorage
-      sessionStorage.removeItem('randomAncestorToGuess');
-      sessionStorage.removeItem('ancestorBirthdayToGuess');
+      sessionStorage.removeItem('randomAncestorToGuess')
+      sessionStorage.removeItem('ancestorBirthdayToGuess')
 
       this.wrongGuessCount = 0
       this.hangmanImage.src = '/src/assets/0.svg'
       this.guessesText.innerText = `${this.wrongGuessCount} / ${this.maxGuesses}`
       this.wordDisplay.innerHTML = this.currentWord
         .split('')
-        .map(() => `<li class="letter"></li>`)
+        .map((char) => {
+          if (char === ' ') {
+            return '<li class="guessed"></li>' // Use a different class for spaces
+          } else {
+            return '<li class="letter"></li>' // Use "letter" class for non-space characters
+          }
+        })
         .join('')
       this.keyboardDiv.querySelectorAll('button').forEach((btn) => (btn.disabled = false))
       this.gameModal.classList.remove('show')
@@ -151,30 +165,29 @@ export default {
     getRandomWord() {
       // Selecting a random word and hint from the wordList
       this.familySearchDataFinal.then((result) => {
-      this.lengthOfFamilyNames = Object.keys(result).length;
-      this.randomNumber = Math.floor(Math.random() * (this.lengthOfFamilyNames + 1)); 
-      
-      // Iterating through the values in the Map using the values() method
-      this.peopleArray = Array.from(result.personMap.values());
-      
-      // Setting a session variable for the ancestor name and hint
-      this.randomAncestorName = this.peopleArray[this.randomNumber].name.compressedName;
-      this.birthdayHint = this.peopleArray[this.randomNumber].birthDate.original;
+        this.lengthOfFamilyNames = Object.keys(result).length
+        this.randomNumber = Math.floor(Math.random() * (this.lengthOfFamilyNames + 1))
 
-      let outputString = ""
+        // Iterating through the values in the Map using the values() method
+        this.peopleArray = Array.from(result.personMap.values())
 
-      //If no birthdate, update variable
-      if ( this.birthdayHint == undefined ) {
-         outputString = "No birthdate found/ancestor is still living" 
+        // Setting a session variable for the ancestor name and hint
+        this.randomAncestorName = this.peopleArray[this.randomNumber].name.compressedName
+        this.birthdayHint = this.peopleArray[this.randomNumber].birthDate.original
+
+        let outputString = ''
+
+        //If no birthdate, update variable
+        if (this.birthdayHint == undefined) {
+          outputString = 'No birthdate found/ancestor is still living'
         } else {
-          outputString = this.birthdayHint
+          outputString = 'Their birthday is ' + this.birthdayHint
         }
 
-      this.currentWord = this.randomAncestorName.toLowerCase() // Making random ancestor name, the guess
-      document.querySelector('.hint-text b').innerText = outputString
-      this.resetGame()
-      
-      });
+        this.currentWord = this.randomAncestorName.toLowerCase() // Making random ancestor name, the guess
+        document.querySelector('.hint-text b').innerText = outputString
+        this.resetGame()
+      })
     },
     gameOver(isVictory) {
       // After game complete.. showing modal with relevant details
@@ -250,7 +263,7 @@ export default {
   align-items: flex-end;
   justify-content: center;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-  color: #272727
+  color: #272727;
 }
 .hangman-box img {
   user-select: none;
@@ -304,7 +317,9 @@ export default {
   justify-content: center;
   align-items: center;
 }
-.game-box .keyboard .line1, .line2, .line3 {
+.game-box .keyboard .line1,
+.line2,
+.line3 {
   display: flex;
   gap: 5px;
   justify-content: center;
