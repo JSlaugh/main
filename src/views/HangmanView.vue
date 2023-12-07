@@ -219,7 +219,7 @@ export default {
 
       // Calling gameOver function if any of these condition meets
       if (this.wrongGuessCount === this.maxGuesses) return this.gameOver(false)
-      if (this.correctLetters.length === this.currentWord.length) return this.gameOver(true)
+      if (this.correctLetters.length + 1 === this.currentWord.length) return this.gameOver(true)
     }
   }
 }
