@@ -8,21 +8,45 @@ export default {
     let uri = window.location.search.substring(1)
     let params = new URLSearchParams(uri)
     this.token = params.get('fstoken')
-    console.log(this.token)
+    //console.log(this.token)
+
     this.familySearchDataFinal = this.getFamilySearchData()
+
   },
   mounted() {
     this.wordDisplay = this.$refs.wordDisplay
     this.guessesText = this.$refs.guessesText
     this.keyboardDiv = this.$refs.keyboardDiv
+    this.line1 = this.$refs.line1
+    this.line2 = this.$refs.line2
+    this.line3 = this.$refs.line3
     this.hangmanImage = this.$refs.hangmanImage
     this.gameModal = this.$refs.gameModal
     this.playAgainBtn = this.$refs.playAgainBtn
-    for (let i = 97; i <= 122; i++) {
+    let asKeyboard = [113, 119, 101, 114, 116, 121, 117, 105, 111, 112, 97, 115, 100, 102, 103, 104, 106, 107, 108, 122, 120, 99, 118, 98, 110, 109];
+    for (let i = 0; i <asKeyboard.length; i++) {
       const button = document.createElement('button')
-      button.innerText = String.fromCharCode(i)
-      this.keyboardDiv.appendChild(button)
-      button.addEventListener('click', (e) => this.initGame(e.target, String.fromCharCode(i)))
+      button.innerText = String.fromCharCode(asKeyboard[i])
+      button.setAttribute("id", String.fromCharCode(asKeyboard[i]));
+      if (i < 10)
+      {
+        this.line1.appendChild(button)
+      }
+      else if (i < 19)
+      {
+        this.line2.appendChild(button)
+      }
+      else
+      {
+        this.line3.appendChild(button)
+      }
+    
+      button.addEventListener('click', (e) => this.initGame(e.target, String.fromCharCode(asKeyboard[i])));
+      document.addEventListener('keypress', function (e) {
+      if (e.key == String.fromCharCode(asKeyboard[i])) {
+        document.getElementById(String.fromCharCode(asKeyboard[i])).click();
+      }
+});
     }
     this.getRandomWord()
     this.playAgainBtn.addEventListener('click', this.getRandomWord)
@@ -40,7 +64,14 @@ export default {
     currentWord: '',
     correctLetters: [],
     wrongGuessCount: '',
-    maxGuesses: 6
+    maxGuesses: 6,
+    peopleArray: [],
+    lengthOfFamilyNames: 0,
+    randomNumber: 0,
+    randomAncestorName: '',
+    birthdayHint: '',
+
+
   }),
   methods: {
     async parseJWT(token) {
@@ -63,7 +94,7 @@ export default {
         .catch((e) => {
           console.log(e)
         })
-      console.log(fsData)
+      //console.log(fsData)
       const url = `https://api.familysearch.org/platform/tree/ancestry?person=${fsData.fs_user.pid}&generations=5&personDetails&marriageDetails=`
       var familySearchData
       await axios
@@ -91,16 +122,21 @@ export default {
         for (var i in rawFSData.data.persons) {
           let person = new Person(rawFSData.data.persons[i])
           newFSData.addPerson(person)
+          //console.log(person.name.compressedName)
         }
       }
       newFSData.insertRelationships(rawFSData.data.relationships)
-      console.log(newFSData)
+      //console.log(newFSData)
       return newFSData
     },
 
     resetGame() {
       // Ressetting game variables and UI elements
       this.correctLetters = []
+      // Clearing ancestor name from sessionStorage
+      sessionStorage.removeItem('randomAncestorToGuess');
+      sessionStorage.removeItem('ancestorBirthdayToGuess');
+
       this.wrongGuessCount = 0
       this.hangmanImage.src = '/src/assets/0.svg'
       this.guessesText.innerText = `${this.wrongGuessCount} / ${this.maxGuesses}`
@@ -114,13 +150,35 @@ export default {
 
     getRandomWord() {
       // Selecting a random word and hint from the wordList
-      this.currentWord = 'ancestor' // Making currentWord as random word
-      document.querySelector('.hint-text b').innerText = 'Info about ancestor here'
+      this.familySearchDataFinal.then((result) => {
+      this.lengthOfFamilyNames = Object.keys(result).length;
+      this.randomNumber = Math.floor(Math.random() * (this.lengthOfFamilyNames + 1)); 
+      
+      // Iterating through the values in the Map using the values() method
+      this.peopleArray = Array.from(result.personMap.values());
+      
+      // Setting a session variable for the ancestor name and hint
+      this.randomAncestorName = this.peopleArray[this.randomNumber].name.compressedName;
+      this.birthdayHint = this.peopleArray[this.randomNumber].birthDate.original;
+
+      let outputString = ""
+
+      //If no birthdate, update variable
+      if ( this.birthdayHint == undefined ) {
+         outputString = "No birthdate found/ancestor is still living" 
+        } else {
+          outputString = this.birthdayHint
+        }
+
+      this.currentWord = this.randomAncestorName.toLowerCase() // Making random ancestor name, the guess
+      document.querySelector('.hint-text b').innerText = outputString
       this.resetGame()
+      
+      });
     },
     gameOver(isVictory) {
       // After game complete.. showing modal with relevant details
-      const modalText = isVictory ? `You found the word:` : 'The correct word was:'
+      const modalText = isVictory ? `You found the ancestor:` : 'The ancestor was/is:'
       this.gameModal.querySelector('img').src = `/src/assets/${isVictory ? 'victory' : 'lost'}.gif`
       this.gameModal.querySelector('h4').innerText = isVictory ? 'Congrats!' : 'Game Over!'
       this.gameModal.querySelector('p').innerHTML = `${modalText} <b>${this.currentWord}</b>`
@@ -171,7 +229,11 @@ export default {
       <ul class="word-display" ref="wordDisplay"></ul>
       <h4 class="hint-text">Fact: <b></b></h4>
       <h4 class="guesses-text">Incorrect guesses: <b ref="guessesText"></b></h4>
-      <div class="keyboard" ref="keyboardDiv"></div>
+      <div class="keyboard" ref="keyboardDiv">
+        <div class="line1" ref="line1"></div>
+        <div class="line2" ref="line2"></div>
+        <div class="line3" ref="line3"></div>
+      </div>
     </div>
   </div>
 </template>
@@ -181,14 +243,14 @@ export default {
 
 .container2 {
   display: flex;
-  width: 850px;
-  gap: 70px;
+  gap: 10rem;
   padding: 60px 40px;
   background: #fff;
   border-radius: 10px;
   align-items: flex-end;
-  justify-content: space-between;
+  justify-content: center;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  color: #272727
 }
 .hangman-box img {
   user-select: none;
@@ -236,8 +298,15 @@ export default {
 .game-box .keyboard {
   display: flex;
   gap: 5px;
+  flex-direction: column;
   flex-wrap: wrap;
   margin-top: 40px;
+  justify-content: center;
+  align-items: center;
+}
+.game-box .keyboard .line1, .line2, .line3 {
+  display: flex;
+  gap: 5px;
   justify-content: center;
 }
 :where(.game-modal, .keyboard) button {
@@ -250,6 +319,7 @@ export default {
   border-radius: 4px;
   text-transform: uppercase;
   background: #5e63ba;
+  min-width: 30px;
 }
 .keyboard button {
   padding: 7px;
@@ -290,6 +360,7 @@ export default {
   border-radius: 10px;
   background: #fff;
   text-align: center;
+  color: #272727;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 .game-modal img {
